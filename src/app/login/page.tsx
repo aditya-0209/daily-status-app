@@ -8,6 +8,36 @@ import { Input } from "@/components/ui/input"
 
 type Mode = "sign_in" | "sign_up" | "forgot" | "forgot_sent"
 
+function AuthStory() {
+  return (
+    <section className="auth-story">
+      <div className="relative z-10 flex items-center gap-3">
+        <div className="flex h-9 w-9 items-center justify-center bg-[#d7fb42] text-[#17191c]">
+          <svg width="15" height="15" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="4" height="4" fill="currentColor" />
+            <rect x="7" y="1" width="4" height="4" fill="currentColor" opacity="0.65" />
+            <rect x="1" y="7" width="4" height="4" fill="currentColor" opacity="0.65" />
+            <rect x="7" y="7" width="4" height="4" fill="currentColor" opacity="0.35" />
+          </svg>
+        </div>
+        <span className="text-base font-bold tracking-tight">Daily Status</span>
+      </div>
+      <div className="relative z-10 max-w-xl">
+        <p className="mb-5 text-xs font-bold uppercase tracking-[0.2em] opacity-75">Clarity for every workday</p>
+        <h2 className="text-5xl font-black leading-[0.95] tracking-[-0.06em] md:text-6xl">
+          Make the work visible.
+        </h2>
+        <p className="mt-6 max-w-md text-base leading-relaxed opacity-85">
+          Daily updates, team check-ins, and project progress—organized in one focused workspace.
+        </p>
+      </div>
+      <p className="relative z-10 text-xs font-semibold uppercase tracking-[0.15em] opacity-70">
+        Plan clearly. Move together.
+      </p>
+    </section>
+  )
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const [mode, setMode] = useState<Mode>("sign_in")
@@ -82,28 +112,16 @@ export default function LoginPage() {
     router.replace("/dashboard/board")
   }
 
-  // ── Logo ────────────────────────────────────────────────────────────
-  const Logo = () => (
-    <div className="flex items-center gap-2 mb-8">
-      <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-        <svg width="13" height="13" viewBox="0 0 12 12" fill="none">
-          <rect x="1" y="1" width="4" height="4" rx="1" fill="white" />
-          <rect x="7" y="1" width="4" height="4" rx="1" fill="white" opacity="0.5" />
-          <rect x="1" y="7" width="4" height="4" rx="1" fill="white" opacity="0.5" />
-          <rect x="7" y="7" width="4" height="4" rx="1" fill="white" opacity="0.25" />
-        </svg>
-      </div>
-      <span className="text-[15px] font-semibold tracking-tight">Daily Status</span>
-    </div>
-  )
-
   // ── Forgot sent confirmation ─────────────────────────────────────────
   if (mode === "forgot_sent") {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-[340px]">
-          <Logo />
-          <div className="bg-card rounded-xl border border-border p-6 shadow-sm text-center space-y-3">
+      <div className="auth-shell flex items-center justify-center">
+        <div className="auth-frame">
+          <AuthStory />
+          <div className="auth-content">
+            <div className="mx-auto w-full max-w-[390px]">
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">Account access</p>
+              <div className="space-y-4 border-t border-border pt-5 text-center">
             <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                 <rect x="1.5" y="4" width="15" height="10" rx="2" stroke="currentColor" strokeWidth="1.3" className="text-primary" />
@@ -133,6 +151,8 @@ export default function LoginPage() {
             >
               ← Back to sign in
             </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -144,14 +164,16 @@ export default function LoginPage() {
   const isSignUp = mode === "sign_up"
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center p-4">
-      <div className="w-full max-w-[340px]">
-        <Logo />
-        <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-          <h1 className="text-[15px] font-semibold mb-0.5">
+    <div className="auth-shell flex items-center justify-center">
+      <div className="auth-frame">
+        <AuthStory />
+        <div className="auth-content">
+          <div className="mx-auto w-full max-w-[390px]">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.18em] text-primary">Account access</p>
+          <h1 className="text-3xl font-black tracking-[-0.045em] mb-1">
             {isForgot ? "Reset password" : isSignUp ? "Create an account" : "Sign in"}
           </h1>
-          <p className="text-[13px] text-muted-foreground mb-5">
+          <p className="text-sm text-muted-foreground mb-7">
             {isForgot
               ? "Enter your email and we'll send a reset link."
               : isSignUp
@@ -244,6 +266,7 @@ export default function LoginPage() {
               </p>
             )}
           </form>
+          </div>
         </div>
       </div>
     </div>

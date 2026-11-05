@@ -231,10 +231,10 @@ export function Sidebar({ profile }: { profile: Profile | null }) {
       )}
 
       <aside className={cn(
-        "shrink-0 h-screen flex flex-col bg-sidebar border-r border-sidebar-border",
+        "app-sidebar shrink-0 h-screen flex flex-col bg-sidebar",
         "fixed top-0 left-0 z-50 transition-all duration-200 ease-in-out",
         "md:relative md:translate-x-0",
-        collapsed ? "w-[52px]" : "w-[220px]",
+        collapsed ? "w-[56px]" : "w-[248px]",
         open ? "translate-x-0" : "-translate-x-full md:translate-x-0"
       )}>
 
@@ -247,13 +247,13 @@ export function Sidebar({ profile }: { profile: Profile | null }) {
           <button
             onClick={toggleCollapse}
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="w-6 h-6 rounded-[4px] bg-primary flex items-center justify-center shrink-0 hover:opacity-75 transition-opacity"
+            className="w-7 h-7 bg-sidebar-primary flex items-center justify-center shrink-0 hover:opacity-75 transition-opacity"
           >
             <svg width="10" height="10" viewBox="0 0 12 12" fill="none">
-              <rect x="1" y="1" width="4" height="4" rx="1" fill="white" />
-              <rect x="7" y="1" width="4" height="4" rx="1" fill="white" opacity="0.5" />
-              <rect x="1" y="7" width="4" height="4" rx="1" fill="white" opacity="0.5" />
-              <rect x="7" y="7" width="4" height="4" rx="1" fill="white" opacity="0.25" />
+              <rect x="1" y="1" width="4" height="4" fill="currentColor" className="text-sidebar-primary-foreground" />
+              <rect x="7" y="1" width="4" height="4" fill="currentColor" className="text-sidebar-primary-foreground" opacity="0.65" />
+              <rect x="1" y="7" width="4" height="4" fill="currentColor" className="text-sidebar-primary-foreground" opacity="0.65" />
+              <rect x="7" y="7" width="4" height="4" fill="currentColor" className="text-sidebar-primary-foreground" opacity="0.35" />
             </svg>
           </button>
           {!collapsed && (
@@ -291,12 +291,13 @@ export function Sidebar({ profile }: { profile: Profile | null }) {
               <Link
                 key={item.href + item.label}
                 href={item.href}
+                aria-current={isActive ? "page" : undefined}
                 title={collapsed ? item.label : undefined}
                 className={cn(
                   "flex items-center rounded-[5px] text-[13px] transition-colors",
                   collapsed ? "justify-center px-0 py-2" : "gap-2 px-2.5 py-[6px]",
                   isActive
-                    ? "bg-sidebar-accent text-sidebar-foreground font-medium"
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground font-semibold"
                     : "text-muted-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent/70"
                 )}
               >

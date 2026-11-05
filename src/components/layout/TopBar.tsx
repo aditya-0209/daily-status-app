@@ -26,7 +26,7 @@ export function TopBar({ profile }: { profile: Profile | null }) {
 
   return (
     <>
-      <header className="h-11 border-b border-border flex items-center justify-between px-4 shrink-0 bg-background/80 backdrop-blur-sm">
+      <header className="app-topbar h-12 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-3">
           {/* Hamburger - mobile only */}
           <button

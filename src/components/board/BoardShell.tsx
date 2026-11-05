@@ -75,9 +75,9 @@ export function BoardShell({
   }
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
+    <div className="board-workspace flex flex-col h-full overflow-hidden">
       {/* Board header */}
-      <div className="border-b border-border bg-background shrink-0">
+      <div className="board-header border-b border-border bg-background shrink-0">
         {/* Top bar: board selector + create */}
         <div className="flex items-center gap-2 px-5 pt-3 pb-0">
           {boards.map(b => (
@@ -85,9 +85,9 @@ export function BoardShell({
               key={b.id}
               href={`/dashboard/board/${b.id}/backlog`}
               className={cn(
-                "text-[12px] font-medium px-2.5 py-1 rounded-md transition-colors",
+                "text-[12px] font-semibold px-3 py-1.5 border transition-colors",
                 activeBoardId === b.id
-                  ? "bg-primary/10 text-primary"
+                  ? "bg-primary text-primary-foreground border-primary"
                   : "text-muted-foreground hover:text-foreground hover:bg-secondary"
               )}
             >
@@ -115,7 +115,7 @@ export function BoardShell({
                 key={tab.key}
                 href={`/dashboard/board/${activeBoardId}/${tab.key}`}
                 className={cn(
-                  "text-[12px] px-3 py-2 border-b-2 transition-colors -mb-px whitespace-nowrap",
+                  "text-[12px] px-3 py-2.5 border-b-2 transition-colors -mb-px whitespace-nowrap uppercase tracking-wide",
                   activeTab === tab.key
                     ? "border-primary text-foreground font-medium"
                     : "border-transparent text-muted-foreground hover:text-foreground"
