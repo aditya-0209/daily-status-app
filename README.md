@@ -1,8 +1,8 @@
 # Daily Status
 
-A team workspace for daily work updates, issue tracking, and project coordination.
-Members share planned and completed work, progress, blockers, and availability;
-teams can also manage boards, issues, sprints, and project documentation.
+A workspace for organizations to manage team daily updates, tasks, sprints, and
+progress. Members share planned and completed work, blockers, and availability;
+teams can also manage boards, issues, and project documentation.
 
 Production-ready setup runbook for local development with Supabase.
 
