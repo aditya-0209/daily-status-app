@@ -63,7 +63,15 @@ export function IssueDetailPanel({
 
   // Close on Escape
   useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") onClose() }
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "Escape") return
+      const target = e.target
+      if (
+        target instanceof HTMLElement &&
+        target.closest("input, textarea, select, [contenteditable='true']")
+      ) return
+      onClose()
+    }
     document.addEventListener("keydown", onKey)
     return () => document.removeEventListener("keydown", onKey)
   }, [onClose])
@@ -74,8 +82,8 @@ export function IssueDetailPanel({
       if (nestedIssue) return
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) onClose()
     }
-    const t = setTimeout(() => document.addEventListener("mousedown", onOutside), 50)
-    return () => { clearTimeout(t); document.removeEventListener("mousedown", onOutside) }
+    const t = setTimeout(() => document.addEventListener("pointerdown", onOutside, true), 50)
+    return () => { clearTimeout(t); document.removeEventListener("pointerdown", onOutside, true) }
   }, [onClose, nestedIssue])
 
   useEffect(() => {
@@ -320,8 +328,15 @@ export function IssueDetailPanel({
       body: JSON.stringify({ issue_id: issue.id, content: newComment.trim() }),
     })
     const data = await res.json()
-    if (res.ok) { setComments(c => [...c, data]); setNewComment("") }
-    else toast.error(data.error)
+    if (res.ok) {
+      setComments(c => [...c, data.comment])
+      setNewComment("")
+      if (data.notificationWarning) {
+        toast.warning("Comment posted, but one or more notifications could not be delivered.")
+      }
+    } else {
+      toast.error(data.error)
+    }
     setPostingComment(false)
   }
 

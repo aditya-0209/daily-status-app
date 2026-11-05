@@ -258,7 +258,7 @@ export function Sidebar({ profile }: { profile: Profile | null }) {
           </button>
           {!collapsed && (
             <>
-              <span className="text-[13px] font-semibold tracking-tight text-sidebar-foreground flex-1">Standup</span>
+              <span className="text-[13px] font-semibold tracking-tight text-sidebar-foreground flex-1">Daily Status</span>
               <ThemeToggle />
             </>
           )}

@@ -5,28 +5,49 @@ import {
 } from "@/lib/date"
 import Groq from "groq-sdk"
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-
 type Member = { id: string; name: string }
 type StatusRow = { id: string; name: string; category: string }
+
+function queryFailure(label: string, error: { message: string; code?: string }) {
+  console.error(`[board-chat] ${label}:`, error)
+  const migrationHint = error.code === "PGRST204" && error.message.includes("tagged_issues")
+    ? " Run supabase/schema-sod-eod.sql in Supabase SQL Editor, then retry."
+    : ""
+  return NextResponse.json(
+    { error: `${label}: ${error.message}.${migrationHint}` },
+    { status: 500 }
+  )
+}
 
 export async function POST(req: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-  const { boardId, message } = await req.json()
-  if (!boardId || !message?.trim()) {
+  const body = await req.json().catch(() => null)
+  const boardId = body?.boardId
+  const message = body?.message
+  if (typeof boardId !== "string" || typeof message !== "string" || !message.trim()) {
     return NextResponse.json({ error: "boardId and message required" }, { status: 400 })
   }
 
-  // Admin-only (standup data can be personal)
-  const { data: profile } = await supabase
+  // Admin-only (daily status data can be personal)
+  const { data: profile, error: profileError } = await supabase
     .from("profiles").select("team_id, role").eq("id", user.id).single()
+  if (profileError) return queryFailure("Failed to load your profile", profileError)
   if (!profile?.team_id) return NextResponse.json({ error: "no_team" }, { status: 400 })
   if (profile.role !== "admin") return NextResponse.json({ error: "admin_only" }, { status: 403 })
 
   const teamId = profile.team_id
+  const { data: board, error: boardError } = await supabase
+    .from("boards")
+    .select("id")
+    .eq("id", boardId)
+    .eq("team_id", teamId)
+    .maybeSingle()
+  if (boardError) return queryFailure("Failed to verify board", boardError)
+  if (!board) return NextResponse.json({ error: "board_not_found" }, { status: 404 })
+
   const q: string = message.trim()
   const t = q.toLowerCase()
   const origin = new URL(req.url).origin
@@ -53,8 +74,9 @@ export async function POST(req: Request) {
   const includeTickets = hardTicketIntent || isRangey || (softWork && !hasToday) || (!includeSOD && !includeEOD)
 
   // ── Members + named-person detection ──────────────────────────────────────
-  const { data: membersData } = await supabase
+  const { data: membersData, error: membersError } = await supabase
     .from("profiles").select("id, name").eq("team_id", teamId).eq("is_active", true)
+  if (membersError) return queryFailure("Failed to load team members", membersError)
   const members = (membersData ?? []) as Member[]
   const namedPerson = members.find(m => {
     const full = m.name?.toLowerCase() ?? ""
@@ -63,8 +85,9 @@ export async function POST(req: Request) {
   }) ?? null
 
   // ── Statuses (for done/in-progress detection) ─────────────────────────────
-  const { data: statusesData } = await supabase
+  const { data: statusesData, error: statusesError } = await supabase
     .from("workflow_statuses").select("id, name, category").eq("board_id", boardId)
+  if (statusesError) return queryFailure("Failed to load board statuses", statusesError)
   const statuses = (statusesData ?? []) as StatusRow[]
   const statusMap = new Map(statuses.map(s => [s.id, s]))
   const catOf = (id: string | null) => (id ? statusMap.get(id)?.category ?? "todo" : "todo")
@@ -74,12 +97,13 @@ export async function POST(req: Request) {
   let sprintRange: { start: string; end: string } | null = null
   let activeSprintId: string | null = null
   if (timeframe.kind === "sprint" || includeTickets) {
-    const { data: activeSprint } = await supabase
+    const { data: activeSprint, error: sprintError } = await supabase
       .from("sprints")
       .select("id, name, start_date, end_date")
       .eq("board_id", boardId).eq("status", "active")
       .order("start_date", { ascending: false, nullsFirst: false })
       .limit(1).maybeSingle()
+    if (sprintError) return queryFailure("Failed to load active sprint", sprintError)
     if (activeSprint) {
       activeSprintId = activeSprint.id
       if (timeframe.kind === "sprint") {
@@ -91,7 +115,7 @@ export async function POST(req: Request) {
     }
   }
 
-  // ── Gather standup data (SOD / EOD) ─────────
+  // ── Gather daily status data (SOD / EOD) ─────
   let sodText = ""
   let eodText = ""
   if (includeSOD || includeEOD) {
@@ -105,14 +129,18 @@ export async function POST(req: Request) {
         .select("todos, blockers, risk, risk_note, checkin_date, tagged_issues, profiles(name), user_id")
         .eq("team_id", teamId).gte("checkin_date", start).lte("checkin_date", end)
       if (namedPerson) cq = cq.eq("user_id", namedPerson.id)
-      checkins = (await cq).data ?? []
+      const { data, error } = await cq
+      if (error) return queryFailure("Failed to load check-ins", error)
+      checkins = data ?? []
     }
     if (includeEOD) {
       let eq = supabase.from("eod_updates")
         .select("accomplished, pending, status, completion_pct, confidence, risk, risk_note, quality_gate, eod_date, tagged_issues, profiles(name), user_id")
         .eq("team_id", teamId).gte("eod_date", start).lte("eod_date", end)
       if (namedPerson) eq = eq.eq("user_id", namedPerson.id)
-      eods = (await eq).data ?? []
+      const { data, error } = await eq
+      if (error) return queryFailure("Failed to load end-of-day updates", error)
+      eods = data ?? []
     }
 
     const taggedIds = new Set<string>()
@@ -123,10 +151,11 @@ export async function POST(req: Request) {
 
     const ticketInfo = new Map<string, { label: string }>()
     if (taggedIds.size > 0) {
-      const { data: tIssues } = await supabase
+      const { data: tIssues, error: taggedIssuesError } = await supabase
         .from("issues")
         .select("id, issue_number, title, type, priority, status_id, board:board_id(key)")
         .in("id", [...taggedIds])
+      if (taggedIssuesError) return queryFailure("Failed to load tagged issues", taggedIssuesError)
       for (const i of (tIssues ?? []) as any[]) {
         const key = i.board?.key ?? "ISSUE"
         const st = statusMap.get(i.status_id)?.name ?? "no status"
@@ -193,7 +222,8 @@ export async function POST(req: Request) {
     if (namedPerson) iq = iq.eq("assignee_id", namedPerson.id)
     iq = iq.limit(120)
 
-    const { data: issues } = await iq
+    const { data: issues, error: issuesError } = await iq
+    if (issuesError) return queryFailure("Failed to load board issues", issuesError)
     const nameOf = (id: string | null) => members.find(m => m.id === id)?.name ?? "unassigned"
     const list = (issues ?? []) as any[]
     ticketText = list.length
@@ -266,13 +296,19 @@ Output format — respond in clean, simple HTML (rendered as rich text):
 
   const context = sections.join("\n\n") || "No relevant data found for this question."
 
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey) {
+    return NextResponse.json({ error: "GROQ_API_KEY is not configured" }, { status: 503 })
+  }
+
   try {
+    const groq = new Groq({ apiKey })
     const res = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",
-          content: `You are a project & standup assistant for a software team. Be concise, specific, and actionable.${personScope}\n\n${guidance}`,
+          content: `You are a project and daily status assistant for a software team. Be concise, specific, and actionable.${personScope}\n\n${guidance}`,
         },
         { role: "user", content: `${context}\n\nQuestion: ${q}` },
       ],

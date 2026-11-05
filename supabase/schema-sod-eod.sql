@@ -8,7 +8,8 @@
 -- Morning check-in (SOD)
 alter table public.checkins
   add column if not exists risk boolean not null default false,
-  add column if not exists risk_note text;
+  add column if not exists risk_note text,
+  add column if not exists tagged_issues jsonb;
 
 -- End of day (EOD)
 -- "What's shipped today?" reuses the existing `accomplished` column.
@@ -17,4 +18,7 @@ alter table public.eod_updates
   add column if not exists confidence text,             -- 'high' | 'medium' | 'low'
   add column if not exists risk boolean not null default false,
   add column if not exists risk_note text,
-  add column if not exists quality_gate jsonb;          -- { matches_prd, dev_qa, needs_review, review_what_whom }
+  add column if not exists quality_gate jsonb,          -- { matches_prd, dev_qa, needs_review, review_what_whom }
+  add column if not exists tagged_issues jsonb;
+
+notify pgrst, 'reload schema';

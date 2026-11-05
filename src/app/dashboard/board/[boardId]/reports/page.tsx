@@ -27,6 +27,7 @@ export default async function ReportsPage({ params }: { params: Promise<{ boardI
       sprints={(sprintsRes.data ?? []) as any}
       issues={(issuesRes.data ?? []) as any}
       statuses={(statusesRes.data ?? []) as any}
+      now={Date.now()}
     />
   )
 }

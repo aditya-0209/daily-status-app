@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils"
 
 /**
  * Shared SOD/EOD detail body — used by the admin History viewer (Overview) and
- * the "View all" team standup panel so both look identical.
+ * the "View all" team status panel so both look identical.
  * Always renders Risk-to-timeline and Blocker lines (showing "No" when absent).
  */
 
@@ -32,7 +32,7 @@ export type EodLike = {
   tagged_issues?: Tagged[] | null
 } | undefined
 
-export function StandupDetail({ sod, eod, tickets }: { sod: SodLike; eod: EodLike; tickets?: TicketMap }) {
+export function DailyStatusDetail({ sod, eod, tickets }: { sod: SodLike; eod: EodLike; tickets?: TicketMap }) {
   const ticketLabel = (t: Tagged) => {
     const info = tickets?.[t.issue_id]
     return info ? `${info.key}-${info.number} ${info.title}` : (t.note || "ticket")

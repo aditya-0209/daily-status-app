@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { getInitials } from "@/lib/utils"
 import { StatusDot } from "@/components/dashboard/StatusBadge"
-import { StandupDetail } from "@/components/dashboard/StandupDetail"
+import { DailyStatusDetail } from "@/components/dashboard/DailyStatusDetail"
 import type { Profile, Checkin, EODUpdate } from "@/types/database"
 
 type Leave = { profile_id: string; leave_type: string }
@@ -16,8 +16,8 @@ const EOD_STATUS_CONFIG = {
   blocked: { label: "Blocked", color: "#f54260" },
 }
 
-/* ── per-member standup card inside the panel ── */
-function MemberStandupCard({
+/* ── per-member status card inside the panel ── */
+function MemberDailyStatusCard({
   member,
   checkin,
   eod,
@@ -64,13 +64,13 @@ function MemberStandupCard({
         </div>
       </div>
 
-      <StandupDetail sod={checkin} eod={eod} tickets={tickets} />
+      <DailyStatusDetail sod={checkin} eod={eod} tickets={tickets} />
     </div>
   )
 }
 
 /* ── main export ── */
-export function TeamStandupTable({
+export function TeamDailyStatusTable({
   teamMembers,
   allCheckins,
   allEods,
@@ -226,7 +226,7 @@ export function TeamStandupTable({
           {/* Panel header */}
           <div className="flex items-center justify-between px-5 h-11 border-b border-border shrink-0">
             <div className="flex items-center text-[14px] font-semibold">
-  <span>Team standup</span>
+  <span>Team daily status</span>
 
   <span className="mx-2 w-1.5 h-1.5 rounded-full bg-gray-400"></span>
 
@@ -247,7 +247,7 @@ export function TeamStandupTable({
           {/* Scrollable list of member cards */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3">
             {teamMembers.map(member => (
-              <MemberStandupCard
+              <MemberDailyStatusCard
                 key={member.id}
                 member={member}
                 checkin={allCheckins.find(c => c.user_id === member.id)}

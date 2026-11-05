@@ -1,4 +1,8 @@
-# Standup Dashboard
+# Daily Status
+
+A team workspace for daily work updates, issue tracking, and project coordination.
+Members share planned and completed work, progress, blockers, and availability;
+teams can also manage boards, issues, sprints, and project documentation.
 
 Production-ready setup runbook for local development with Supabase.
 
@@ -75,17 +79,18 @@ Core and migrations:
 3. supabase/schema-v3.sql
 4. supabase/schema-v4.sql
 5. supabase/schema-v5.sql
+6. supabase/schema-team-profiles.sql
 
 Feature schemas:
 
-6. supabase/schema-docs.sql
-7. supabase/schema-sod-eod.sql
-8. supabase/schema-notifications.sql (STEP 1 block first)
+7. supabase/schema-docs.sql
+8. supabase/schema-sod-eod.sql
+9. supabase/schema-notifications.sql (STEP 1 block first)
 
 Optional scheduler:
 
-9. Enable extension pg_cron in Supabase.
-10. Run schema-notifications.sql STEP 2 block (cron.schedule) only after pg_cron is enabled.
+10. Enable extension pg_cron in Supabase.
+11. Run schema-notifications.sql STEP 2 block (cron.schedule) only after pg_cron is enabled.
 
 Why this order matters:
 

@@ -17,7 +17,7 @@ export default async function TeamPage() {
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString()
 
-  const [{ data: members }, { data: invites }] = await Promise.all([
+  const [{ data: members, error: membersError }, { data: invites }] = await Promise.all([
     supabase
       .from("profiles")
       .select("id,name,email,role,avatar_color,is_active,team_id,team_name,role_name,created_at")
@@ -33,11 +33,16 @@ export default async function TeamPage() {
       : { data: [] },
   ])
 
+  if (membersError) {
+    console.error("[team/page] Failed to load team members:", membersError.message)
+    throw new Error(`Failed to load team members: ${membersError.message}`)
+  }
+
   return (
     <div className="h-full overflow-y-auto p-5 md:p-6 lg:p-8">
       <TeamPageClient
-        initialMembers={(members ?? []) as any}
-        initialInvites={(invites ?? []) as any}
+        initialMembers={members ?? []}
+        initialInvites={invites ?? []}
         isAdmin={profile.role === "admin"}
         currentUserId={user.id}
       />

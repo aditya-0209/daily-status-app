@@ -157,7 +157,7 @@ function OnboardingInner() {
               <rect x="7" y="7" width="4" height="4" rx="1" fill="white" opacity="0.25" />
             </svg>
           </div>
-          <span className="text-[15px] font-semibold tracking-tight">Standup</span>
+          <span className="text-[15px] font-semibold tracking-tight">Daily Status</span>
         </div>
 
         {/* Choose path */}
@@ -232,7 +232,7 @@ function OnboardingInner() {
                   Your name
                 </label>
                 <Input
-                  placeholder="Ayush"
+                  placeholder="Aditya"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   autoFocus

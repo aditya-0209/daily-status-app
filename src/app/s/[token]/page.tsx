@@ -74,10 +74,10 @@ export default async function PublicSummaryPage({
               </svg>
             </div>
             <span className="text-[13px] font-semibold text-[#f0f0f0]/80">
-              {summary.teams?.name ?? "Standup"}
+              {summary.teams?.name ?? "Daily Status"}
             </span>
           </div>
-          <h1 className="text-[18px] font-semibold">Daily standup summary</h1>
+          <h1 className="text-[18px] font-semibold">Daily team status</h1>
           <p className="text-[13px] text-[#6b6b6b]">{date}</p>
         </div>
 
@@ -115,7 +115,7 @@ export default async function PublicSummaryPage({
 
         {/* Footer */}
         <p className="text-[11px] text-[#6b6b6b] text-center pb-4">
-          Shared via Standup Dashboard · Read-only view
+          Shared via Daily Status · Read-only view
         </p>
       </div>
     </div>

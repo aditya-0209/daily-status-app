@@ -27,6 +27,8 @@ export interface Profile {
   role: Role
   avatar_color: string
   team_id: string | null
+  team_name?: string | null
+  role_name?: string | null
   is_active: boolean
   created_at: string
   teams?: Team

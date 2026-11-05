@@ -83,7 +83,7 @@ function AiChat({ boardId, sampleName }: { boardId: string; sampleName?: string 
 
   const firstName = sampleName?.split(" ")[0]
   const suggestions = [
-    "Give me today's standup summary",
+    "Give me today's team status summary",
     "What will everyone get done today?",
     firstName ? `What's ${firstName}'s update today?` : "Summarize someone's day today",
     "Summary for this week",

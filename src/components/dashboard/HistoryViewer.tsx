@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react"
 import { cn, getInitials } from "@/lib/utils"
 import { todayIST, fmtDate } from "@/lib/date"
-import { StandupDetail } from "./StandupDetail"
+import { DailyStatusDetail } from "./DailyStatusDetail"
 
 type Person = { id: string; name: string; avatar_color: string }
 type Tagged = { issue_id: string; note?: string; outcome?: string }
@@ -53,7 +53,7 @@ export function HistoryViewer() {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-[13px] font-semibold">Standup history</h2>
+        <h2 className="text-[13px] font-semibold">Daily status history</h2>
         <div className="flex items-center gap-1.5">
           <button onClick={() => shiftDay(-1)} className="w-7 h-7 flex items-center justify-center rounded-md border border-border text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors" title="Previous day">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M7.5 2.5L4 6l3.5 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -95,7 +95,7 @@ export function HistoryViewer() {
                   </span>
                 </div>
 
-                <StandupDetail sod={sod} eod={eod} tickets={tickets} />
+                <DailyStatusDetail sod={sod} eod={eod} tickets={tickets} />
               </div>
             )
           })}
@@ -112,4 +112,3 @@ function Tag({ on, label }: { on: boolean; label: string }) {
     </span>
   )
 }
-

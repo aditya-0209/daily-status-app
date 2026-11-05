@@ -8,8 +8,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 export const metadata: Metadata = {
-  title: "Standup Dashboard",
-  description: "Team standup made simple",
+  title: "Daily Status",
+  description: "Daily team updates, progress, blockers, and work tracking",
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

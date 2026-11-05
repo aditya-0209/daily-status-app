@@ -113,6 +113,13 @@ export function MentionTextarea({
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (showPicker && e.key === "Escape") {
+      e.preventDefault()
+      e.stopPropagation()
+      setShowPicker(false)
+      return
+    }
+
     if (showPicker && filteredMembers.length > 0) {
       if (e.key === "ArrowDown") { e.preventDefault(); setPickerIdx(i => Math.min(i + 1, filteredMembers.length - 1)); return }
       if (e.key === "ArrowUp") { e.preventDefault(); setPickerIdx(i => Math.max(i - 1, 0)); return }
@@ -121,7 +128,6 @@ export function MentionTextarea({
         insertMention(filteredMembers[pickerIdx])
         return
       }
-      if (e.key === "Escape") { setShowPicker(false); return }
     }
     onKeyDown?.(e)
   }
@@ -161,6 +167,7 @@ export function MentionTextarea({
       {showPicker && filteredMembers.length > 0 && (
         <div
           ref={pickerRef}
+          onMouseDown={e => e.stopPropagation()}
           className="absolute bottom-full mb-1 left-0 w-52 bg-card border border-border rounded-lg shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-100"
         >
           {filteredMembers.map((m, i) => (

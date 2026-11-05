@@ -43,8 +43,6 @@ export async function GET(req: Request) {
         ).join("\n")
       : "No EOD updates yet."
 
-    const standupData = `MORNING:\n${morningData}\n\nEOD:\n${eodData}`
-
     try {
       const [summaryText, insights] = await Promise.all([
         generateAISummary(morningData, eodData),

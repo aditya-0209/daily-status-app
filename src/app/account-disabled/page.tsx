@@ -25,7 +25,7 @@ export default function AccountDisabledPage() {
               <rect x="7" y="7" width="4" height="4" rx="1" fill="white" opacity="0.25" />
             </svg>
           </div>
-          <span className="text-[15px] font-semibold tracking-tight">Standup</span>
+          <span className="text-[15px] font-semibold tracking-tight">Daily Status</span>
         </div>
 
         <div className="bg-card border border-border rounded-xl p-6 text-center space-y-4">

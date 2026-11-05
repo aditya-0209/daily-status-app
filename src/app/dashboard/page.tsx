@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { todayISO, getInitials, formatTime } from "@/lib/utils"
 import { hourIST } from "@/lib/date"
 import { StatusDot } from "@/components/dashboard/StatusBadge"
-import { TeamStandupTable } from "@/components/dashboard/TeamStandupTable"
+import { TeamDailyStatusTable } from "@/components/dashboard/TeamDailyStatusTable"
 import { HistoryViewer } from "@/components/dashboard/HistoryViewer"
 import { IssueTypeIcon } from "@/components/board/IssueTypeBadge"
 import type { Profile, Checkin, EODUpdate, Project, Issue, Sprint } from "@/types/database"
@@ -185,7 +185,7 @@ export default async function DashboardPage() {
   let allCheckins: Checkin[] = []
   let allEods: EODUpdate[] = []
   let atRiskProjects: Project[] = []
-  let standupTickets: Record<string, { key: string; number: number; title: string }> = {}
+  let dailyStatusTickets: Record<string, { key: string; number: number; title: string }> = {}
 
   if (isAdmin) {
     const [{ data: members }, { data: checkins }, { data: eods }, { data: projects }] = await Promise.all([
@@ -194,7 +194,7 @@ export default async function DashboardPage() {
       supabase.from("eod_updates").select("*").eq("team_id", teamId).eq("eod_date", today),
       supabase.from("projects").select("*").eq("team_id", teamId).eq("is_active", true).neq("status", "done"),
     ])
-    // Exclude the admin themselves from the standup table - admins don't do check-ins
+    // Exclude the admin themselves from the daily status table - admins don't do check-ins
     teamMembers = (members ?? []).filter(m => m.id !== user.id)
     allCheckins = checkins ?? []
     allEods = eods ?? []
@@ -208,7 +208,7 @@ export default async function DashboardPage() {
         .select("id, issue_number, title, board:board_id(key)")
         .in("id", [...tagIds])
       for (const i of (tIssues ?? []) as any[]) {
-        standupTickets[i.id] = { key: i.board?.key ?? "ISSUE", number: i.issue_number, title: i.title }
+        dailyStatusTickets[i.id] = { key: i.board?.key ?? "ISSUE", number: i.issue_number, title: i.title }
       }
     }
 
@@ -431,7 +431,7 @@ export default async function DashboardPage() {
         )
       })()}
 
-      {/* ── ADMIN: Team standup table ────────────────────────────────────── */}
+      {/* ── ADMIN: Team daily status table ──────────────────────────────── */}
       {isAdmin && (
         <>
           {/* At-risk projects */}
@@ -465,7 +465,7 @@ export default async function DashboardPage() {
             </div>
           )}
 
-          {/* Team standup status */}
+          {/* Team daily status */}
           <div className="bg-card border border-border rounded-lg overflow-hidden">
             <div className="px-4 py-2.5 border-b border-border flex items-center justify-between">
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider">
@@ -477,16 +477,16 @@ export default async function DashboardPage() {
                 <span>{teamMembers.length - allCheckins.length} pending</span>
               </div>
             </div>
-            <TeamStandupTable
+            <TeamDailyStatusTable
               teamMembers={teamMembers as Profile[]}
               allCheckins={allCheckins as Checkin[]}
               allEods={allEods as EODUpdate[]}
               todayLeaves={todayLeaves ?? []}
-              tickets={standupTickets}
+              tickets={dailyStatusTickets}
             />
           </div>
 
-          {/* Standup history — browse any past day */}
+          {/* Daily status history — browse any past day */}
           <div className="bg-card border border-border rounded-lg p-4">
             <HistoryViewer />
           </div>

@@ -1,7 +1,7 @@
 import Groq from "groq-sdk"
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
-const MODEL = "llama-3.3-70b-versatile"
+const MODEL = "openai/gpt-oss-120b"
 
 export interface ProjectContext {
   name: string
@@ -51,7 +51,7 @@ function buildSummaryPrompt(
     remote.length > 0 ? `Remote: ${remote.map((m) => m.name).join(", ")}` : "",
   ].filter(Boolean).join("\n")
 
-  return `You are a standup recorder for a software team. Write a brief, factual daily standup summary.
+  return `You are a daily status recorder for a software team. Write a brief, factual team status summary.
 
 STRICT RULES:
 - Report only what team members explicitly wrote. Do not infer quality, risk, or success beyond the raw data.
@@ -98,7 +98,7 @@ function buildInsightsPrompt(
 
   const onLeave = memberContext.filter((m) => m.onLeave).map((m) => m.name)
 
-  return `You are a standup analyst. Return ONLY a valid JSON array - no markdown, no preamble.
+  return `You are a daily status analyst. Return ONLY a valid JSON array - no markdown, no preamble.
 
 Each item: { "type": "blocker"|"risk"|"reminder"|"kudos"|"suggestion", "title": "max 5 words", "detail": "one actionable sentence with names/projects" }
 
@@ -130,7 +130,7 @@ function buildChatPrompt(
     leaveData?: string
   }
 ): string {
-  return `You are a standup assistant. Answer the admin's question using only the team data below.
+  return `You are a daily status assistant. Answer the admin's question using only the team data below.
 
 Rules:
 - Be direct and specific. Reference names and project names from the data.

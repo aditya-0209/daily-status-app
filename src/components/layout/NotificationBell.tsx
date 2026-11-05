@@ -45,6 +45,8 @@ export function NotificationBell({ userId }: { userId: string }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const dropRef = useRef<HTMLDivElement>(null)
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const audioUnlockedRef = useRef(false)
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -63,6 +65,40 @@ export function NotificationBell({ userId }: { userId: string }) {
 
   // Supabase realtime — instant badge update
   useEffect(() => {
+    function unlockAudio() {
+      const AudioContextConstructor = window.AudioContext
+      if (!AudioContextConstructor) return
+
+      const context = audioContextRef.current ?? new AudioContextConstructor()
+      audioContextRef.current = context
+      void context.resume().then(() => {
+        audioUnlockedRef.current = context.state === "running"
+      }).catch(error => {
+        console.warn("[notifications] Could not enable notification audio:", error)
+      })
+    }
+
+    function playMentionSound() {
+      const context = audioContextRef.current
+      if (!audioUnlockedRef.current || !context || context.state !== "running") return
+
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      const now = context.currentTime
+      oscillator.type = "sine"
+      oscillator.frequency.setValueAtTime(880, now)
+      gain.gain.setValueAtTime(0.0001, now)
+      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2)
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.start(now)
+      oscillator.stop(now + 0.21)
+    }
+
+    window.addEventListener("pointerdown", unlockAudio)
+    window.addEventListener("keydown", unlockAudio)
+
     const supabase = createClient()
     const channel = supabase
       .channel("notifications-bell")
@@ -78,11 +114,16 @@ export function NotificationBell({ userId }: { userId: string }) {
           const newNotif = payload.new as Notification
           setNotifications(prev => [newNotif, ...prev].slice(0, 30))
           setUnreadCount(c => c + 1)
+          if (newNotif.type === "mention") playMentionSound()
         }
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => {
+      window.removeEventListener("pointerdown", unlockAudio)
+      window.removeEventListener("keydown", unlockAudio)
+      supabase.removeChannel(channel)
+    }
   }, [userId])
 
   // Close on outside click

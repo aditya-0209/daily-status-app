@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { cookies } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
+import { CreateBoardButton } from "@/components/board/CreateBoardButton"
 
 export default async function BoardIndexPage() {
   // Fast path: if user has visited a board before, redirect instantly via cookie
@@ -14,7 +15,7 @@ export default async function BoardIndexPage() {
   if (!user) redirect("/login")
 
   const { data: profile } = await supabase
-    .from("profiles").select("team_id").eq("id", user.id).single()
+    .from("profiles").select("team_id, role").eq("id", user.id).single()
   if (!profile?.team_id) redirect("/onboarding")
 
   const { data: boards, error } = await supabase
@@ -47,8 +48,11 @@ export default async function BoardIndexPage() {
       <p className="text-[13px] text-muted-foreground mb-3">
         {error
           ? "Database not set up - run schema-v5.sql in Supabase SQL Editor first."
-          : "Ask your admin to create a board to get started."}
+          : profile.role === "admin"
+            ? "Create a board to get your team started."
+            : "Ask your admin to create a board to get started."}
       </p>
+      {!error && profile.role === "admin" && <CreateBoardButton />}
     </div>
   )
 }

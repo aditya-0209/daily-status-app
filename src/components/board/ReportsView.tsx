@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react"
 import {
   LineChart, Line, BarChart, Bar,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts"
 import type { Sprint, Issue, WorkflowStatus } from "@/types/database"
 import { cn } from "@/lib/utils"
@@ -20,14 +20,24 @@ function isoToMs(s: string | null | undefined) {
 
 /* ── Burndown ────────────────────────────────────── */
 
-function BurndownChart({ sprint, issues }: { sprint: Sprint; issues: Issue[] }) {
+function BurndownChart({ sprint, issues, statuses, now }: { sprint: Sprint; issues: Issue[]; statuses: WorkflowStatus[]; now: number }) {
   const startMs = isoToMs(sprint.start_date)
   const endMs = isoToMs(sprint.end_date)
   if (!startMs || !endMs) return (
     <p className="text-[12px] text-muted-foreground text-center py-8">Sprint has no dates set.</p>
   )
+  if (issues.length === 0) return (
+    <p className="text-[12px] text-muted-foreground text-center py-8">No issues in this sprint yet.</p>
+  )
 
-  const totalPts = sprintPoints(issues)
+  const useStoryPoints = sprintPoints(issues) > 0
+  const total = useStoryPoints ? sprintPoints(issues) : issues.length
+  const completedIssues = issues.filter(i =>
+    statuses.find(status => status.id === i.status_id)?.category === "done"
+  )
+  const completed = useStoryPoints
+    ? sprintPoints(completedIssues)
+    : completedIssues.length
   const totalDays = Math.max(1, Math.ceil((endMs - startMs) / 86400000))
 
   // Build ideal burndown line
@@ -35,37 +45,33 @@ function BurndownChart({ sprint, issues }: { sprint: Sprint; issues: Issue[] }) 
   for (let i = 0; i <= totalDays; i++) {
     const d = new Date(startMs + i * 86400000)
     const label = `${d.getMonth() + 1}/${d.getDate()}`
-    const ideal = Math.round(totalPts * (1 - i / totalDays))
+    const ideal = Math.round(total * (1 - i / totalDays))
     data.push({ day: label, ideal })
   }
 
-  // Actual: remaining points each day (based on completed issues)
+  // Actual: estimate progress from the current completion snapshot.
   // We don't have per-day completion history, so we show a snapshot at "today" vs end
-  const today = Date.now()
-  if (today >= startMs) {
-    const completedPts = issues
-      .filter(i => (i as any).workflow_status?.category === "done")
-      .reduce((s, i) => s + (i.story_points ?? 0), 0)
-    const daysElapsed = Math.min(totalDays, Math.ceil((today - startMs) / 86400000))
+  if (now >= startMs) {
+    const daysElapsed = Math.min(totalDays, Math.ceil((now - startMs) / 86400000))
     for (let i = 0; i <= daysElapsed; i++) {
-      const ratio = i / daysElapsed
-      data[i].actual = Math.round(totalPts - completedPts * ratio)
+      const ratio = daysElapsed === 0 ? 0 : i / daysElapsed
+      data[i].actual = Math.round(total - completed * ratio)
     }
   }
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={260} minWidth={0}>
       <LineChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
         <XAxis dataKey="day" tick={{ fontSize: 10, fill: "#6b6b6b" }} interval="preserveStartEnd" />
-        <YAxis tick={{ fontSize: 10, fill: "#6b6b6b" }} />
+        <YAxis domain={[0, Math.max(total, 1)]} allowDecimals={false} tick={{ fontSize: 10, fill: "#6b6b6b" }} />
         <Tooltip
           contentStyle={{ background: "#161616", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, fontSize: 12 }}
           labelStyle={{ color: "#f0f0f0" }}
         />
         <Legend wrapperStyle={{ fontSize: 11 }} />
-        <Line type="monotone" dataKey="ideal" stroke="#3a3a3a" strokeDasharray="4 4" dot={false} name="Ideal" />
-        <Line type="monotone" dataKey="actual" stroke="#26d97f" strokeWidth={2} dot={false} name="Actual" />
+        <Line type="monotone" dataKey="ideal" stroke="#8b8b8b" strokeDasharray="4 4" dot={false} name={`Ideal ${useStoryPoints ? "points" : "issues"}`} />
+        <Line type="monotone" dataKey="actual" stroke="#26d97f" strokeWidth={2} dot={false} name={`Actual ${useStoryPoints ? "points" : "issues"}`} />
       </LineChart>
     </ResponsiveContainer>
   )
@@ -73,13 +79,17 @@ function BurndownChart({ sprint, issues }: { sprint: Sprint; issues: Issue[] }) 
 
 /* ── Velocity ────────────────────────────────────── */
 
-function VelocityChart({ sprints, issues }: { sprints: Sprint[]; issues: Issue[] }) {
+function VelocityChart({ sprints, issues, statuses }: { sprints: Sprint[]; issues: Issue[]; statuses: WorkflowStatus[] }) {
+  const useStoryPoints = sprints.some(sp =>
+    sprintPoints(issues.filter(i => i.sprint_id === sp.id)) > 0
+  )
   const data = sprints.map(sp => {
     const sprintIssues = issues.filter(i => i.sprint_id === sp.id)
-    const committed = sprintPoints(sprintIssues)
-    const completed = sprintIssues
-      .filter(i => (i as any).workflow_status?.category === "done")
-      .reduce((s, i) => s + (i.story_points ?? 0), 0)
+    const completedIssues = sprintIssues.filter(i =>
+      statuses.find(status => status.id === i.status_id)?.category === "done"
+    )
+    const committed = useStoryPoints ? sprintPoints(sprintIssues) : sprintIssues.length
+    const completed = useStoryPoints ? sprintPoints(completedIssues) : completedIssues.length
     return { name: sp.name.length > 12 ? sp.name.slice(0, 12) + "…" : sp.name, committed, completed }
   })
 
@@ -88,18 +98,18 @@ function VelocityChart({ sprints, issues }: { sprints: Sprint[]; issues: Issue[]
   )
 
   return (
-    <ResponsiveContainer width="100%" height={260}>
+    <ResponsiveContainer width="100%" height={260} minWidth={0}>
       <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
         <XAxis dataKey="name" tick={{ fontSize: 10, fill: "#6b6b6b" }} />
-        <YAxis tick={{ fontSize: 10, fill: "#6b6b6b" }} />
+        <YAxis domain={[0, Math.max(1, ...data.map(d => d.committed))]} allowDecimals={false} tick={{ fontSize: 10, fill: "#6b6b6b" }} />
         <Tooltip
           contentStyle={{ background: "#161616", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, fontSize: 12 }}
           labelStyle={{ color: "#f0f0f0" }}
         />
         <Legend wrapperStyle={{ fontSize: 11 }} />
-        <Bar dataKey="committed" fill="rgba(94,106,210,0.4)" radius={[3, 3, 0, 0]} name="Committed" />
-        <Bar dataKey="completed" fill="#26d97f" radius={[3, 3, 0, 0]} name="Completed" />
+        <Bar dataKey="committed" fill="rgba(94,106,210,0.7)" radius={[3, 3, 0, 0]} name={`Committed ${useStoryPoints ? "points" : "issues"}`} />
+        <Bar dataKey="completed" fill="#26d97f" radius={[3, 3, 0, 0]} name={`Completed ${useStoryPoints ? "points" : "issues"}`} />
       </BarChart>
     </ResponsiveContainer>
   )
@@ -111,7 +121,15 @@ function SprintSummary({ sprint, issues, statuses }: { sprint: Sprint; issues: I
   const sprintIssues = issues.filter(i => i.sprint_id === sprint.id)
   const total = sprintIssues.length
   const pts = sprintPoints(sprintIssues)
-  const donePts = sprintIssues.filter(i => (i as any).workflow_status?.category === "done").reduce((s, i) => s + (i.story_points ?? 0), 0)
+  const doneIssues = sprintIssues.filter(i =>
+    statuses.find(status => status.id === i.status_id)?.category === "done"
+  )
+  const donePts = doneIssues.reduce((s, i) => s + (i.story_points ?? 0), 0)
+  const completion = pts > 0
+    ? Math.round((donePts / pts) * 100)
+    : total > 0
+      ? Math.round((doneIssues.length / total) * 100)
+      : 0
 
   const byStatus = statuses.map(st => ({
     ...st,
@@ -147,10 +165,16 @@ function SprintSummary({ sprint, issues, statuses }: { sprint: Sprint; issues: I
           <p className="text-[10px] text-muted-foreground">Story Pts</p>
         </div>
         <div className="rounded-md bg-muted/30 p-2.5 text-center">
-          <p className="text-[18px] font-bold text-[#26d97f]">{pts > 0 ? Math.round((donePts / pts) * 100) : 0}%</p>
+          <p className="text-[18px] font-bold text-[#26d97f]">{completion}%</p>
           <p className="text-[10px] text-muted-foreground">Complete</p>
         </div>
       </div>
+
+      {sprint.status === "active" && total > 0 && doneIssues.length === total && (
+        <p className="text-[11px] text-muted-foreground">
+          All issues are done. Ask an admin to complete this sprint from Backlog.
+        </p>
+      )}
 
       {/* Status breakdown */}
       <div className="space-y-1.5">
@@ -181,10 +205,12 @@ export function ReportsView({
   sprints,
   issues,
   statuses,
+  now,
 }: {
   sprints: Sprint[]
   issues: Issue[]
   statuses: WorkflowStatus[]
+  now: number
 }) {
   const activeSprint = sprints.find(s => s.status === "active")
   const [selectedSprintId, setSelectedSprintId] = useState<string>(activeSprint?.id ?? sprints[0]?.id ?? "")
@@ -224,7 +250,7 @@ export function ReportsView({
         <div className="rounded-lg border border-border p-4 space-y-3">
           <p className="text-[13px] font-semibold">Burndown</p>
           {selectedSprint ? (
-            <BurndownChart sprint={selectedSprint} issues={sprintIssues} />
+            <BurndownChart sprint={selectedSprint} issues={sprintIssues} statuses={statuses} now={now} />
           ) : (
             <p className="text-[12px] text-muted-foreground text-center py-8">Select a sprint.</p>
           )}
@@ -232,7 +258,7 @@ export function ReportsView({
 
         <div className="rounded-lg border border-border p-4 space-y-3">
           <p className="text-[13px] font-semibold">Velocity</p>
-          <VelocityChart sprints={sprints} issues={issues} />
+          <VelocityChart sprints={sprints} issues={issues} statuses={statuses} />
         </div>
       </div>
 

@@ -50,11 +50,11 @@ export async function insertNotifications(
     issueId?: string
     boardId?: string
   }[]
-) {
-  if (rows.length === 0) return
+) : Promise<boolean> {
+  if (rows.length === 0) return true
   try {
     const supabase = createServiceClient()
-    await supabase.from("notifications").insert(
+    const { error } = await supabase.from("notifications").insert(
       rows.map(r => ({
         user_id: r.userId,
         type: r.type,
@@ -64,7 +64,13 @@ export async function insertNotifications(
         board_id: r.boardId ?? null,
       }))
     )
-  } catch {
-    // fire-and-forget
+    if (error) {
+      console.error("[notifications] Failed to insert notifications:", error)
+      return false
+    }
+    return true
+  } catch (error) {
+    console.error("[notifications] Failed to insert notifications:", error)
+    return false
   }
 }
