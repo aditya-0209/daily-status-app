@@ -1,7 +1,19 @@
 import Groq from "groq-sdk"
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY })
+let groq: Groq | undefined
 const MODEL = "openai/gpt-oss-120b"
+
+function getGroqClient() {
+  if (groq) return groq
+
+  const apiKey = process.env.GROQ_API_KEY
+  if (!apiKey?.trim()) {
+    throw new Error("GROQ_API_KEY is required to use AI features.")
+  }
+
+  groq = new Groq({ apiKey })
+  return groq
+}
 
 export interface ProjectContext {
   name: string
@@ -165,7 +177,7 @@ export function streamAISummary(
 ) {
   const prompt = buildSummaryPrompt(morningData, eodData, projects, memberContext)
     + buildPastContext(pastSummaries, recentQA)
-  return groq.chat.completions.create({
+  return getGroqClient().chat.completions.create({
     model: MODEL,
     messages: [{ role: "user", content: prompt }],
     max_tokens: 400,
@@ -184,7 +196,7 @@ export async function generateAISummary(
 ): Promise<string> {
   const prompt = buildSummaryPrompt(morningData, eodData, projects, memberContext)
     + buildPastContext(pastSummaries, recentQA)
-  const res = await groq.chat.completions.create({
+  const res = await getGroqClient().chat.completions.create({
     model: MODEL,
     messages: [{ role: "user", content: prompt }],
     max_tokens: 400,
@@ -199,7 +211,7 @@ export async function generateAIInsights(
   projects: ProjectContext[] = [],
   memberContext: MemberContext[] = []
 ) {
-  const res = await groq.chat.completions.create({
+  const res = await getGroqClient().chat.completions.create({
     model: MODEL,
     messages: [{ role: "user", content: buildInsightsPrompt(morningData, eodData, projects, memberContext) }],
     max_tokens: 600,
@@ -225,7 +237,7 @@ export function streamChatAnswer(
     leaveData?: string
   }
 ) {
-  return groq.chat.completions.create({
+  return getGroqClient().chat.completions.create({
     model: MODEL,
     messages: [{ role: "user", content: buildChatPrompt(question, context) }],
     max_tokens: 300,
